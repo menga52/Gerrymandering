@@ -2,6 +2,8 @@
 <p>
   This repository will house the documentation pertaining to an independent study exploring mathematical approaches to district gerrymandering and recognition of gerrymandering.
 </p>
+<h2>Dependencies</h2>
+pip install structlinks
 <h2>Directory structure</h2>
 <h3>src</h3>
 Source code

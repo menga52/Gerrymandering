@@ -1,5 +1,6 @@
 import sys
-
+import structlinks
+from structlinks.LinkedList import *
 d = -1
 v = -1
 dList = -1
@@ -53,16 +54,74 @@ def compactness():
 	return optimal / sumOfSquares	
 
 def elongatedness():
-	return -1
+	maxX = -1
+	maxY = -1
+	minX = len(districtPrecincts)
+	minY = len(districtPrecincts[0])
+	for d in districtPrecincts:
+		if maxX < d[0]:
+			maxX = d[0]
+		if minX > d[0]:
+			minX = d[0]
+		if maxY < d[1]:
+			maxY = d[1]
+		if minY > d[1]:
+			minY = d[1]
+	xLen = maxX - minX + 1
+	yLen = maxY - minY + 1
+	return min(xLen/yLen, yLen/xLen)
+	
+def districtNumber(x, y):
+	"""
+	helper function - return the district number to which a precinct belongs
+	returns -1 if the location is not part of the state
+	"""
+	if x<0 or y<0 or x>=len(districtPrecints) or y>=len(districtPrecincts[0]):
+		return -1
+	return districts[x][y]
 
 def indentedness():
 	return -1
 
-def numPunctures():
+def numPunctures(district):
+	"""
+	i=0
+	while there are remain unchecked precincts outside the district do:
+		create new list
+		i+=1
+		breadth first search to find all neighboring precincts outside the district starting from an unchecked district
+		return i - 1
+	"""
 	return -1
 
 def numComponents():
+	"""
+	probably unnecessary
+	"""
 	return -1
 
 def isSeparated():
+	"""
+	for each district
+		breadth first search
+		if search doesn't reach all precincts in district, return false
+	return true
+	"""
 	return -1
+	
+def getVote(x,y):
+	if x<0 or y<0 or x>=len(districtPrecints) or y>=len(districtPrecincts[0]):
+		return -1
+	return votes[x][y]
+	
+def computeVotesEqualWeight():
+	# if perspective != 0 and perspective != 1:
+	#	raise ValueError("perspective should be one or zero")
+	for dist in dList:
+		sums = [0, 0]
+		for prec in districtPrecincts[dist]:
+			sums[getVote(prec[0], prec[1])] += 1
+	
+	return sums
+	
+	
