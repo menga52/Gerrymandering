@@ -13,3 +13,6 @@ Source code
 tests of basic functionality
 <h4>utilities</h4>
 basic functionality
+<h5>TODO</h5>
+Create State class
+Implement genetic algorithm

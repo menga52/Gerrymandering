@@ -32,7 +32,7 @@ def readState(string: str):
 	for line in fileref:
 		row = []
 		for word in line.split():
-			row.append(word)
+			row.append(int(word))
 		if row == []:
 			votes = []
 		if votes == -1:
@@ -59,7 +59,7 @@ def readStateWithoutDistricts(string: str):
 	for line in fileref:
 		row = []
 		for word in line.split():
-			row.append(word)
+			row.append(int(word))
 		votes.append(row)
 	return votes
 	
