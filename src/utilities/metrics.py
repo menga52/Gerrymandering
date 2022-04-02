@@ -1,28 +1,10 @@
 import sys
 import structlinks
 from structlinks.LinkedList import *
+from classes.state import *
 
 	
-def findDistricts(districts):
-	"""
-	This function searches through a state to identify which precincts belong to which district
-	inputs:
-	districts - a two-dimensional array of district numbers where districts[i][j] = k means (i, j) is in district k
-	
-	outputs:
-	precincts - a dictionary whose keys districts and whose values are lists of coordianates
-	"""
-	precincts = {}
-	for i in range(len(districts)):
-		for j in range(len(districts[0])):
-			if districts[i][j] not in precincts:
-				precincts[districts[i][j]] = []
-			precincts[districts[i][j]].append((i, j))
-	return precincts
-	
-
-	
-def distance(x1, y1, x2, y2, districts):
+def distance(x1, y1, x2, y2, district_matrix):
 	"""
 	inputs:
 	(x1, y1) and (x2, y2) are precinct locations
@@ -34,11 +16,11 @@ def distance(x1, y1, x2, y2, districts):
 	
 	if one district or the other is not in the bounds of the state, raise error
 	"""
-	if districtNumber(x1, y1, districts) == -1 or districtNumber(x2,y2, districts) == -1:
+	if districtNumber(x1, y1, district_matrix) == -1 or districtNumber(x2,y2, district_matrix) == -1:
 		raise IndexError
 	return max(abs(x1-x2), abs(y1-y2))
 
-def compactness(districts, precincts, pow=2):
+def compactness(state: State, pow=2):
 	"""
 	This function computes the compactness of a possible map. It weights in favor of maps that have equal size districts;
 	to change this, one would recompute "optimal" as the sum of the square roots of the district sizes.
@@ -48,26 +30,31 @@ def compactness(districts, precincts, pow=2):
 	pow - how heavily non-compact districts should be weighted. Higher pow <--> lower compactness.
 	
 	TODO: add output which houses compactness contributions of individual districts (memoization)
+		  add argument for memoized district compactness values
 	"""
+	if not state.instantiated:
+		print("should not compute compactness of uninstantiated state")
+		raise ValueError
+	district_matrix = state.district_matrix
 	sumOfPowers= 0
-	for district in precincts:
+	for district in state.districts:
 		maxDistance = -1
 		
-		for d1 in precincts[district]:
-			for d2 in precincts[district]:
-				d = distance(d1[0], d1[1], d2[0], d2[1], districts)
+		for p1 in district.precincts:
+			for p2 in district.precincts:
+				d = distance(p1[0], p1[1], p2[0], p2[1], district_matrix)
 				if d > maxDistance:
 					maxDistance = d
-		sumOfPowers+= maxDistance**pow
-	numDistricts = len(precincts)
-	numPrecincts = sum(len(districts[i]) for i in range(len(districts)))
+		sumOfPowers += maxDistance**pow
+	numDistricts = len(state.districts)
+	numPrecincts = sum(len(district_matrix[i]) for i in range(len(district_matrix)))
 	avgDistrictSize = numPrecincts / numDistricts
 	
 	optimal = numDistricts * (avgDistrictSize**0.5)**pow
 	
 	return optimal / sumOfPowers
 
-def elongatedness(precincts):
+def elongatedness(state: State):
 	"""
 	This function computes the elongatedness of a district. Longer/skinnier districts score worse, whereas
 	more compact districts with similar lengths/widths will score better. Likely to have some reduncancy with compactness.
@@ -75,44 +62,49 @@ def elongatedness(precincts):
 	inputs: precincts - a map whose keys are district IDs and whose values are precinct coordinates
 	
 	outputs: worstRatio - the worst ratio of height/width (or width/height) of any district in the state
+	
+	# TODO: add arguments to make the function customizable
 	"""
-	if len(precincts) == 0:
+	if len(state.districts) == 0:
 		return None
 	worstRatio = 1
-	for district in precincts:
+	for district in state.districts:
 		maxX = -1
 		maxY = -1
 		minX = sys.maxsize
 		minY = sys.maxsize
-		for d in precincts[district]:
-			if maxX < d[0]:
-				maxX = d[0]
-			if minX > d[0]:
-				minX = d[0]
-			if maxY < d[1]:
-				maxY = d[1]
-			if minY > d[1]:
-				minY = d[1]
+		
+		for p in district.precincts:
+			if maxX < p[0]:
+				maxX = p[0]
+			if minX > p[0]:
+				minX = p[0]
+			if maxY < p[1]:
+				maxY = p[1]
+			if minY > p[1]:
+				minY = p[1]
 		xLen = maxX - minX + 1
 		yLen = maxY - minY + 1
+		# xLen = district.maxX - district.minX + 1
+		# yLen = district.maxY - district.minY + 1
 		elong = min(xLen/yLen, yLen/xLen)
 		if elong < worstRatio:
 			worstRatio = elong
 	return worstRatio
 	
-def districtNumber(x, y, districts):
+def districtNumber(x, y, district_matrix):
 	"""
 	helper function - return the district number to which a precinct belongs
 	returns -1 if the location is not part of the state
 	"""
-	if x<0 or y<0 or x>=len(districts) or y>=len(districts[0]):
+	if x<0 or y<0 or x>=len(district_matrix) or y>=len(district_matrix[x]):
 		return -1
-	return districts[x][y]
+	return district_matrix[x][y]
 
 def indentedness():
 	return -1
 	
-def puncturedness(precincts, districts):
+def puncturedness(state: State):
 	"""
 	This function converts totalPunctures into a number that is more immediately applicable to the quality of a map.
 	It returns 1 if a map is acceptable or (functionally) negative infinity otherwise.
@@ -122,12 +114,14 @@ def puncturedness(precincts, districts):
 	
 	outputs:
 	1 if the map is not punctured, a very small number otherwise
+	# TODO: compute nonbinary composite metric
 	"""
-	if totalPunctures(precincts, districts) > 0:
+	
+	if totalPunctures(state) > 0:
 		return -(sys.maxsize ** 0.5)
 	return 1.0
 	
-def totalPunctures(precincts, districts):
+def totalPunctures(state: State):
 	"""
 	This function computes the total number of punctures in a state
 	inputs:
@@ -138,11 +132,11 @@ def totalPunctures(precincts, districts):
 	sum - the number of punctures in the state
 	"""
 	sum = 0
-	for district in precincts:
-		sum += numPunctures(district, precincts, districts)
+	for district in state.districts:
+		sum += numPunctures(district, state)
 	return sum
 
-def numPunctures(district, precincts, districts):
+def numPunctures(district, state: State):
 	"""
 	This function identifies the number of punctures in a given district
 	inputs: 
@@ -155,11 +149,11 @@ def numPunctures(district, precincts, districts):
 	"""
 	# setup
 	i = 0
-	d = districts
+	# d = state.district_matrix
 	groups = {}
-	for dist in precincts:
-		if dist != district:
-			for precinct in precincts[dist]:
+	for dist in state.districts:
+		if dist.id != district.id:
+			for precinct in dist.precincts:
 				groups[precinct] = -1
 	# if one district covers the whole state, then there are no punctures.
 	if len(groups) == 0:
@@ -180,13 +174,13 @@ def numPunctures(district, precincts, districts):
 		y = start[1]
 		neighbors = [(x-1,y), (x,y-1), (x+1,y), (x,y+1)]
 		for n in neighbors:
-			neighbor = districtNumber(n[0], n[1], districts)
-			if neighbor != district:
-				if neighbor == -1:
+			neighbor_district_id = districtNumber(n[0], n[1], state.district_matrix)
+			if neighbor_district_id != district.id:
+				if neighbor_district_id == -1:
 					# we hit a border in the breadth first search, so the contiguous group is not a puncture
 					isPuncture = 0
 				elif groups[n] == -1:
-					# if groups[n] != 1, we have already added it to the queue.
+					# if groups[n] != -1, we have already added it to the queue.
 					# if n == -1, it is a border, and we should not explore it.
 					queue.append(n)
 					groups[n] = i
@@ -226,7 +220,7 @@ def getVote(x,y, votes):
 		return -1
 	return votes[x][y]
 	
-def computeVotesEqualWeight(precincts, votes):
+def computeVotesEqualWeight(state: State):
 	"""
 	This function simulates an election given a drawn map and voting outcome
 	inputs:
@@ -236,11 +230,15 @@ def computeVotesEqualWeight(precincts, votes):
 	outputs:
 	sums - the number of districts which vote for each candidate. Candidates are indices in "sums"
 	"""
-	for dist in dList:
+	votes = [0, 0]
+	for district in state.districts:
 		sums = [0, 0]
-		for prec in precincts[dist]:
-			sums[getVote(prec[0], prec[1], votes)] += 1
-	
-	return sums
+		for prec in district.precincts:
+			sums[getVote(prec[0], prec[1], state.voting_outcome)] += 1
+		if sums[0]>sums[1]:
+			votes[0] += 1
+		elif sums[1]>sums[0]:
+			votes[1] += 1
+	return votes
 	
 	

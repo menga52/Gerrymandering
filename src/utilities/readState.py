@@ -1,3 +1,5 @@
+from classes.state import *
+
 state1 = []
 for i in range(10):
 	state1.append([i]*10)
@@ -41,8 +43,7 @@ def readState(string: str):
 			if row == []:
 				continue
 			votes.append(row)
-		
-	return districts, votes
+	return State(votes, districts)
 	
 def readStateWithoutDistricts(string: str):
 	"""
@@ -61,6 +62,6 @@ def readStateWithoutDistricts(string: str):
 		for word in line.split():
 			row.append(int(word))
 		votes.append(row)
-	return votes
+	return State(votes)
 	
 	
