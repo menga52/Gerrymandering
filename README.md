@@ -14,5 +14,9 @@ tests of basic functionality
 <h4>utilities</h4>
 basic functionality
 <h5>TODO</h5>
-Create State class
-Implement genetic algorithm
+Test genetic algorithm
+write neighborhood algorithm
+comment uncommented functions
+refactor names
+all the TODOs in the code
+abstract recombination stage into function

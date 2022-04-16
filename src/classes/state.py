@@ -95,6 +95,12 @@ class State:
 			return -1
 		return self.district_matrix[x][y]
 		
+	def getDistrictByID(self, district_ID):
+		for d in self.districts:
+			if d.id == district_ID:
+				return d
+		return None
+		
 		
 	
 def cloneMatrix(matr):

@@ -206,7 +206,7 @@ def numComponents():
 	"""
 	return -1
 	
-def isSeparated(state: State):
+def separatedness(state: State):
 	"""
 	input:
 	state - state object in question
