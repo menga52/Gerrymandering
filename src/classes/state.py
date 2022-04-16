@@ -63,6 +63,48 @@ class State:
 			self.districts = []
 			for district_id in district_dict:
 				self.districts.append(District(district_id, district_dict[district_id]))
+				
+				
+	def instantiate(self, district_matrix):
+		"""
+		add a district map to the state
+		inputs: 
+		district_matrix - a two-dimensional representation of the districts
+		
+		outputs:
+		mutates the state object to be instantiated and have districts
+		"""
+		self.district_matrix = district_matrix
+		self.instantiated = True
+		district_dict = findDistricts(district_matrix)
+			self.districts = []
+			for district_id in district_dict:
+				self.districts.append(District(district_id, district_dict[district_id]))
+				
+	def clone(self):
+		new_voting_outcome = cloneMatrix(self.voting_outcome)
+		return State(new_voting_outcome, new_district_matrix)
+	
+	def cloneInstantiated(self):
+		new_voting_outcome = cloneMatrix(self.voting_outcome)
+		new_district_matrix = cloneMatrix(self.district_matrix)
+		return State(new_voting_outcome, new_district_matrix)
+		
+	def getDistrictNumber(self, x, y):
+		if x < 0 or x >= len(self.district_matrix) or y < 0 or y >= len(self.district_matrix[x]):
+			return -1
+		return self.district_matrix[x][y]
+		
+		
+	
+def cloneMatrix(matr):
+	out = [0]*len(matr)
+	for i in range(len(out)):
+		out[i] = [0]*len(matr[i])
+		for j in range(len(matr[i])):
+			out[i][j] = matr[i][j]
+	return out
+				
 
 def findDistricts(district_matrix):
 	"""

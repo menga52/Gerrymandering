@@ -205,8 +205,47 @@ def numComponents():
 	probably unnecessary
 	"""
 	return -1
+	
+def isSeparated(state: State):
+	"""
+	input:
+	state - state object in question
+	
+	output:
+	1 if map is not separated, -(sys.maxsize**0.5) otherwise
+	"""
+	for district in state.districts:
+		if districtIsSeparated(state, district):
+			return -(sys.maxsize**0.5)
+	return 1.0
 
-def isSeparated():
+def districtIsSeparated(state: State, district):
+	"""
+	state - state object in question
+	district - district object being tested
+	output:
+	True if the district is disjoint (discontinuous, disallowing neighbors via corners), False otherwise
+	"""
+	if len(district.precincts) == 0:
+		return False
+	queue = LinkedList()
+	queue.append(district.precincts[0])
+	checked = [district.precincts[0]]
+	while len(queue) != 0:
+		start = queue.pop(0)
+		x = start[0]
+		y = start[1]
+		neighbors = [(x-1,y), (x,y-1), (x+1,y), (x,y+1)]
+		for n in neighbors:
+			if n in checked:
+				continue
+			n_id = districtNumber(n[0], n[1], state.district_matrix)
+			if n_id == district.id:
+				queue.append(n)
+				checked.append(n)
+	
+	return len(checked) != len(district.precincts)
+
 	"""
 	for each district
 		breadth first search
@@ -216,7 +255,7 @@ def isSeparated():
 	return NotImplementedError
 	
 def getVote(x,y, votes):
-	if x<0 or y<0 or x>=len(votes) or y>=len(votes[0]):
+	if x<0 or y<0 or x>=len(votes) or y>=len(votes[x]):
 		return -1
 	return votes[x][y]
 	
@@ -240,5 +279,4 @@ def computeVotesEqualWeight(state: State):
 		elif sums[1]>sums[0]:
 			votes[1] += 1
 	return votes
-	
 	
