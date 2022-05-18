@@ -77,13 +77,13 @@ class State:
 		self.district_matrix = district_matrix
 		self.instantiated = True
 		district_dict = findDistricts(district_matrix)
-			self.districts = []
-			for district_id in district_dict:
-				self.districts.append(District(district_id, district_dict[district_id]))
+		self.districts = []
+		for district_id in district_dict:
+			self.districts.append(District(district_id, district_dict[district_id]))
 				
 	def clone(self):
 		new_voting_outcome = cloneMatrix(self.voting_outcome)
-		return State(new_voting_outcome, new_district_matrix)
+		return State(new_voting_outcome, self.district_matrix)
 	
 	def cloneInstantiated(self):
 		new_voting_outcome = cloneMatrix(self.voting_outcome)

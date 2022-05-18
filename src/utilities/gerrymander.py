@@ -2,8 +2,26 @@ from classes.state import *
 from utilities.metrics import *
 from random import random
 from numpy.random import normal
+from utilities.utilities import *
 
-def geneticGerrymander(state: State, num_districts, pop_size, combination_proportion, reproductive_randomness, initial_pop_randomness, sampling_strategy=fitness_proportional_sampling, generations, recombinations, favored=1):
+def fitness_proportional_sampling(favored, population, num_samples):
+	fitnesses = [0]*len(population)
+	cum_sum = 0
+	cum_fitnesses = [0]*len(population)
+	samples = [0]*num_samples
+	
+	for i in range(len(fitnesses)):
+		fitnesses[i] = compute_fitness(population[i])
+		cum_sum += fitnesses[i]
+		cum_fitnesses = cum_sum
+	
+	for i in range(num_samples):
+		rand_index = random()*cum_sum
+		samples[i] = population[binarySearch(cum_fitnesses, rand_index)]
+	
+	return samples
+
+def geneticGerrymander(state: State, num_districts, pop_size, combination_proportion, reproductive_randomness, initial_pop_randomness, generations, recombinations,sampling_strategy=fitness_proportional_sampling, favored=1):
 	# we assume that "state" is uninitialized
 	"""
 	inputs:
@@ -33,9 +51,12 @@ def geneticGerrymander(state: State, num_districts, pop_size, combination_propor
 	"""
 	population = [0]*pop_size
 	for i in range(pop_size):
-		new_map = randomMap(state, num_districts, initial_pop_randomness, 0)
+		# new_map = randomMap(state, num_districts, initial_pop_randomness, 0)
+		new_map = randomMap2(state, num_districts)
 		while new_map == False:
-			new_map = randomMap(state, num_districts, initial_pop_randomness, 0)
+			# can't come here with randomMap2
+			# new_map = randomMap(state, num_districts, initial_pop_randomness, 0)
+			new_map = randomMap2(state, num_districts)
 	generation = 0
 	while generation < generations:
 		samples = sampling_strategy(favored, population, 2*pop_size)
@@ -94,7 +115,7 @@ def geneticGerrymander(state: State, num_districts, pop_size, combination_propor
 			index = i
 	return population[index]
 	
-def neighborhoodGerrymander(state: State, favored=1, num_districts, pop_size, distance):
+def neighborhoodGerrymander(state: State, num_districts, pop_size, distance, favored=1):
 	"""
 	inputs:
 	state - the state object to be gerrymandered
@@ -119,9 +140,7 @@ def neighborhoodGerrymander(state: State, favored=1, num_districts, pop_size, di
 	return NotImplementedError
 	
 def reproduce(state1: State, state2: State, combination_proportion, reproductive_randomness, random_district_allowable_failures):
-	district_matrix = [0]*len(state1.district_matrix)
-	for i in range(district_matrix):
-		district_matrix[i] = [-1]*len(state1.district_matrix)
+	district_matrix = resetMatrix(cloneMatrix(state1.voting_outcome))
 	num_districts = len(state1.districts)
 	num_precincts = sum(len(state1.district_matrix[i]) for i in range(len(state1.district_matrix)))
 	untried = [0]*2*num_districts
@@ -131,10 +150,10 @@ def reproduce(state1: State, state2: State, combination_proportion, reproductive
 	precincts_assigned = 0
 	districts_assigned = 0
 	while precincts_assigned < combination_proportion*num_precincts and len(untried) > 0:
-		index = random()*len(untried)
+		index = int(random()*len(untried))
 		temp = untried[index]
 		state_ID = temp[0]
-		district_ID = untried[1]
+		district_ID = temp[1]
 		del untried[index]
 		if state_ID == 1:
 			state = state1
@@ -142,14 +161,14 @@ def reproduce(state1: State, state2: State, combination_proportion, reproductive
 			state = state2
 		no_intersection = True
 		for p in state.getDistrictByID(district_ID).precincts:
-			if district_matrix[p[0], p[1]] != -1:
+			if district_matrix[p[0]][p[1]] != -1:
 				no_intersection = False
 				break
 		if no_intersection:
 			for p in state.getDistrictByID(district_ID).precincts:
-				district_matrix[p[0], p[1]] = districts_assigned
+				district_matrix[p[0]][p[1]] = districts_assigned
 			districts_assigned += 1
-			precincts_assigned += len(state.getDistrictByID[district_ID].precincts)
+			precincts_assigned += len(state.getDistrictByID(district_ID).precincts)
 	
 	while precincts_assigned < reproductive_randomness*num_precincts:
 		new_district = addRandomDistrict(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned)
@@ -162,23 +181,7 @@ def reproduce(state1: State, state2: State, combination_proportion, reproductive
 		return child
 	return False
 		
-	
-def fitness_proportional_sampling(favored, population, num_samples):
-	fitnesses = [0]*len(population)
-	cum_sum = 0
-	cum_fitnesses = [0]*len(population)
-	samples = [0]*num_samples
-	
-	for i in range(len(fitnesses)):
-		fitnesses[i] = compute_fitness(population[i])
-		cum_sum += fitnesses[i]
-		cum_fitnesses = cum_sum
-	
-	for i in range(num_samples):
-		rand_index = random()*cum_sum
-		samples[i] = population[binarySearch(cum_fitnesses, rand_index)]
-	
-	return samples
+
 	
 	
 
@@ -198,8 +201,46 @@ def compute_fitness(favored, state: State, compactness_w=1, elongatedness_w=1, i
 	denom = compactness_w + elongatedness_w + indentedness_w + puncturedness_w + separatedness_w + voting_outcome_w
 	return compactness_w*compactness(state, compactness_pow) + elongatedness_w*elongatedness(state) + indentedness_w*indentedness(state) + puncturedness_w*puncturedness(state) + separatedness_w*separatedness(state) + voting_outcome_w*proportion / denom
 	
+
+def randomMap2(state: State, num_districts):
+	district_matrix = cloneMatrix(state.voting_outcome)
+	resetMatrix(district_matrix)
+	assigned = []
+	unassigned = []
+	for i in range(len(state.voting_outcome)):
+		for j in range(len(state.voting_outcome[i])):
+			unassigned.append((i,j))
+	candidates = []
+	for i in range(num_districts):
+		precinct = unassigned[int(random()*len(unassigned))]
+		x = precinct[0]; y = precinct[1]
+		district_matrix[x][y] = i
+		neighbors = [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
+		for n in neighbors:
+			if is_unmatched(n, district_matrix) and not n in candidates and not n in assigned:
+				candidates.append(n)
+	while candidates != []:
+		candidate_index = int(random()*len(candidates))
+		precinct = candidates[candidate_index]
+		x = precinct[0]; y = precinct[1]
+		neighbors = [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
+		district_options = []
+		for n in neighbors:
+			if is_matched(n, district_matrix):
+				if not district_matrix[n[0]][n[1]] in district_options:
+					district_options.append(district_matrix[n[0]][n[1]])
+			elif is_unmatched(n, district_matrix):
+				candidates.append(n)
+		district_matrix[x][y] = district_options[int(random()*len(district_options))]
+		del candidates[candidate_index]
+		assigned.append(precinct)
 	
-def randomMap(state: State, num_districts, randomness, tolerable_failures):
+	return district_matrix
+		
+		
+	
+	
+def randomMap(state: State, num_districts, randomness=0.3, tolerable_failures=10):
 	"""
 	inputs:
 	state - the state object being gerrymandered
@@ -226,21 +267,32 @@ def randomMap(state: State, num_districts, randomness, tolerable_failures):
 			num_precincts += 1
 	districts_assigned = 0
 	precincts_assigned = 0
-	while(districts_assigned < randomness*num_districts):
-		distr = addRandomDistrict(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned):
-		if distr_size == False:
+	while(precincts_assigned < randomness*num_precincts):
+		backup_copy = cloneMatrix(district_matrix)
+		distr = addRandomDistrict(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned)
+		if not distr:
+			# TODO: decrement tolerable failures, try again
 			return False
 		precincts_assigned += len(distr)
 		districts_assigned += 1
-	
+	print("districts assigned", districts_assigned)
 	# while districts_assigned < num_districts:
 	# 	distr_size = addDistrict(state, district_matrix, num_precincts, num_districts):
 	#	if distr_size == False:
 	#		return False
 	#	precincts_assigned += distr_size
 	#	districts_assigned += 1
-	if not addDistricts(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned):
-		randomMap(state, num_districts, randomness, tolerable_failures - 1
+	print(district_matrix)
+	print(num_precincts)
+	print(num_districts)
+	print(precincts_assigned)
+	print(districts_assigned)
+	ret = addDistricts(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned)
+	print(ret)
+	if not ret:
+		print("aaaaaaaaaaaaaaaaaaaaa")
+		return randomMap(state, num_districts, randomness, tolerable_failures - 1)
+	print("bbbbbbbbbbbb")
 	
 	clone = state.clone()
 	clone.instantiate(district_matrix)
@@ -272,18 +324,17 @@ def addRandomDistrict(district_matrix, num_precincts, num_districts, precincts_a
 	district_list = []
 	
 	remaining = max(1, int(normalSample(goal_size+1.5, goal_size**(1/3)))) # TODO: choose the max size of the district from normal distribution
-	while len(candidates) > 0 && remaining > 0:
+	while len(candidates) > 0 and remaining > 0:
 		remaining -= 1
 		rand_index = int(random()*len(candidates))
 		cur = candidates[rand_index]
 		district_list.append(cur)
 		del candidates[rand_index]
 		x = cur[0]; y = cur[1]
-		district_list.append(cur)
 		district_matrix[x][y] = districts_assigned
 		neighbors = [(x-1, y), (x, y-1), (x+1, y), (x, y+1)]
 		for n in neighbors:
-			if is_unmatched(n):
+			if is_unmatched(n, district_matrix) and not n in candidates and not n in district_list:
 				candidates.append(n)
 	return district_list
 	
@@ -309,22 +360,37 @@ def addDistricts(district_matrix, num_precincts, num_districts, precincts_assign
 			until num groups small enough
 		recursive call
 	"""
+	original_district_matrix = cloneMatrix(district_matrix)
+	
 	if districts_assigned == num_districts:
+		print("districts_assigned", districts_assigned)
+		print("num_districts", num_districts)
+		print("precincts_assigned", precincts_assigned)
+		print("num_precincts", num_precincts)
 		# shouldn't be a way for num_precincts to differ from precincts_assigned, but just in case
 		return precincts_assigned == num_precincts
 	goal_size = (num_precincts - precincts_assigned) / (num_districts - districts_assigned)
+	print("goal size", goal_size)
+	print("num_districts", num_districts)
 	
 	groups = contiguousGroups(is_unmatched, district_matrix)
 	groups.sort(key=len)
 	accrued = 0 # TODO: forgot what this was for
-	while len(groups) > 0 && len(groups[0]) < goal_size:
+	while len(groups) > 0 and len(groups[0]) <= goal_size:
 		precincts_assigned += len(groups[0])
 		update_district_matrix(district_matrix, groups[0], districts_assigned)
 		districts_assigned += 1
 		del groups[0]
+		if num_districts == districts_assigned:
+			print("precincts_assigned", precincts_assigned)
+			return district_matrix
 		goal_size = (num_precincts - precincts_assigned) / (num_districts - districts_assigned)
-	
+
 	new_district = addRandomDistrict(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned)
+	if not new_district:
+		return False
+	precincts_assigned += len(new_district)
+	
 	new_groups = contiguousGroups(is_unmatched, district_matrix)
 	merges = len(new_groups) + districts_assigned - num_districts
 	while merges > 0:
@@ -333,22 +399,25 @@ def addDistricts(district_matrix, num_precincts, num_districts, precincts_assign
 		choose random available adjacent square
 		expand in that direction
 		"""
+		if(type(new_district) is not list):
+			print(new_district)
 		for i in range(len(new_district)):
 			x = new_district[i][0]
 			y = new_district[i][1]
 			neighbors = [(x-1, y), (x, y-1), (x+1, y), (x, y+1)]
 			start = -1
 			for n in neighbors:
-				if is_unmatched(n):
+				if is_unmatched(n, district_matrix):
 					start = n
 					break
 			if start != -1:
 				group = bfs(start, is_unmatched, district_matrix)
 				for prec in group:
-					district_matrix[prec[0], prec[1]] = districts_assigned
+					district_matrix[prec[0]][prec[1]] = districts_assigned
 				precincts_assigned += len(group)
 				
 				break
+		merges = merges - 1
 	districts_assigned += 1
 	return addDistricts(district_matrix, num_precincts, num_districts, precincts_assigned, districts_assigned)
 		
@@ -359,11 +428,17 @@ def update_district_matrix(district_matrix, district_list, district_ID):
 		x = pos[0]; y = pos[1]
 		district_matrix[x][y] = district_ID
 	
-def is_unmatched(ordered_pair):
+def is_unmatched(ordered_pair, district_matrix):
 	x = ordered_pair[0]; y = ordered_pair[1]
 	if x<0 or y<0 or x>=len(district_matrix) or y>=len(district_matrix[x]):
 		return False
 	return district_matrix[x][y] == -1
+	
+def is_matched(ordered_pair, district_matrix):
+	x = ordered_pair[0]; y = ordered_pair[1]
+	if x<0 or y<0 or x>=len(district_matrix) or y >=len(district_matrix[x]):
+		return False
+	return district_matrix[x][y] != -1
 	
 
 def findAvailablePrecinct(district_matrix):
@@ -387,21 +462,25 @@ def findAvailablePrecinct(district_matrix):
 	
 def normalSample(mean, sd):
 	#TODO: check math
-	return mean + normal*sd
+	return mean + normal(0)*sd
 
 def getStart(fun, matr):
 	for i in range(len(matr)):
 		for j in range(len(matr[i])):
-			if fun(matr[i][j]):
+			if fun((i, j), matr):
 				return (i, j)
 	return False
 	
 def contiguousGroups(fun, matr):
 	groups = []
 	start = getStart(fun, matr)
+	newMatr = cloneMatrix(matr)
 	while not not start:
-		group = bfs(start, fun, matr)
+		group = bfs(start, fun, newMatr)
 		groups.append(group)
+		for pos in group:
+			newMatr[pos[0]][pos[1]] = 1
+		start = getStart(fun, newMatr)
 	return groups
 
 def bfs(start, fun, matr):
@@ -415,7 +494,7 @@ def bfs(start, fun, matr):
 		y = cur[1]
 		neighbors = [(x-1, y), (x, y-1), (x+1, y), (x, y+1)]
 		for n in neighbors:
-			if fun(n):
+			if (n not in queue) and (n not in group) and fun(n, matr):
 				queue.append(n)
 	return group
 
@@ -432,3 +511,9 @@ def binarySearch(cum_fitnesses, rand_value):
 		else:
 			min = mid
 	return mid
+
+def resetMatrix(matr):
+	for i in range(len(matr)):
+		for j in range(len(matr[i])):
+			matr[i][j] = -1
+	return matr
