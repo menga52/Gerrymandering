@@ -1,0 +1,51 @@
+State,Coefficient,Name,bad coef,estimatedP
+AL,0.52,Alabama,0.047,0.99
+AK,0.38,Alaska,0.047,0.9
+AZ,0.049,Arizona,0.047,0.5
+AR,0.48,Arkansas,0.047,0.99
+CA,0.45,California,0.047,0.01
+CO,0.3,Colorado,0.047,0.1
+CT,0.3,Connecticut,0.047,0.01
+DE,0.3,Delaware,0.047,0.01
+FL,0.25,Florida,0.047,0.67
+GA,0.08,Georgia,0.047,0.42
+HI,0.55,Hawaii,0.047,0.005
+ID,0.4,Idaho,0.047,0.995
+IL,0.22,Illinois,0.047,0.005
+IN,0.38,Indiana,0.047,0.96
+IA,1.2,Iowa,0.047,0.6
+KS,0.25,Kansas,0.047,0.99
+KY,0.45,Kentucky,0.047,0.99
+LA,0.39,Louisiana,0.047,0.99
+ME,0.23,Maine,0.047,0.2
+MD,0.48,Maryland,0.047,0.005
+MA,0.6,Massachusetts,0.047,0.005
+MI,0.2,Michigan,0.047,0.4
+MN,0.4,Minnesota,0.047,0.2
+MS,0.4,Mississippi,0.047,0.92
+MO,0.42,Missouri,0.047,0.96
+MT,0.45,Montana,0.047,0.82
+NE,0.2,Nebraska,0.047,0.995
+NV,0.5,Nevada,0.047,0.24
+NH,0.235,New Hampshire,0.047,0.2
+NJ,0.22,New Jersey,0.047,0.01
+NM,0.2,New Mexico,0.047,0.02
+NY,0.34,New York,0.047,0.005
+NC,0.1,North Carolina,0.047,0.6
+ND,0.7,North Dakota,0.047,0.98
+OH,0.4,Ohio,0.047,0.75
+OK,0.6,Oklahoma,0.047,0.995
+OR,0.35,Oregon,0.047,0.2
+PA,0.03,Pennsylvania,0.047,0.33
+RI,0.35,Rhode Island,0.047,0.005
+SC,0.35,South Carolina,0.047,0.9
+SD,0.65,South Dakota,0.047,0.95
+TN,0.53,Tennessee,0.047,0.97
+TX,0.45,Texas,0.047,0.8
+UT,0.95,Utah,0.047,0.95
+VT,0.6,Vermont,0.047,0.005
+VA,0.2,Virginia,0.047,0.005
+WA,0.3,Washington,0.047,0.005
+WV,0.6,West Virginia,0.047,0.995
+WI,0.2,Wisconsin,0.047,0.2
+WY,0.75,Wyoming,0.047,0.995

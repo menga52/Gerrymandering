@@ -16,7 +16,12 @@ def distance(x1, y1, x2, y2, district_matrix):
 	
 	if one district or the other is not in the bounds of the state, raise error
 	"""
-	if districtNumber(x1, y1, district_matrix) == -1 or districtNumber(x2,y2, district_matrix) == -1:
+	dim1 = len(district_matrix)
+	if x1<0 or x1>=dim1 or x2<0 or x2>=dim1 or y1<0 or y2<0:
+		raise IndexError
+	# if districtNumber(x1, y1, district_matrix) == -1 or districtNumber(x2,y2, district_matrix) == -1:
+		# raise IndexError
+	elif y1>=len(district_matrix[x1]) or y2>=len(district_matrix[x2]):
 		raise IndexError
 	return max(abs(x1-x2), abs(y1-y2))
 
@@ -101,7 +106,7 @@ def districtNumber(x, y, district_matrix):
 		return -1
 	return district_matrix[x][y]
 
-def indentedness():
+def indentedness(state: State):
 	return -1
 	
 def puncturedness(state: State):
@@ -163,7 +168,6 @@ def numPunctures(district, state: State):
 		if len(queue) == 0:
 			start = getStart(groups)
 			if start == None:
-				print(groups)
 				return i
 			isPuncture = 1
 			groups[start] = i
